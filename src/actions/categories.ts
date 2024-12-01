@@ -1,10 +1,14 @@
 "use server";
 
 import slugify from "slugify";
+import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/supabase/server";
 import { CategoriesWithProductsResponse } from "@/app/admin/categories/categories.types";
-import { CreateCategorySchemaServer } from "@/app/admin/categories/create-category.schema";
+import {
+  CreateCategorySchemaServer,
+  UpdateCategorySchema,
+} from "@/app/admin/categories/create-category.schema";
 
 const supabase = await createClient();
 
@@ -66,4 +70,29 @@ export const createCategory = async ({
   if (error) throw new Error(`Error creating category: ${error.message}`);
 
   return data;
+};
+
+export const updateCategory = async ({
+  image_url,
+  name,
+  slug,
+}: UpdateCategorySchema) => {
+  const { data, error } = await supabase
+    .from("category")
+    .update({ name, image_url })
+    .match({ slug });
+
+  if (error) throw new Error(`Error updating category: ${error.message}`);
+
+  revalidatePath("/admin/categories");
+
+  return data;
+};
+
+export const deleteCategory = async (id: number) => {
+  const { error } = await supabase.from("category").delete().match({ id });
+
+  if (error) throw new Error(`Error deleting category: ${error.message}`);
+
+  revalidatePath("/admin/categories");
 };

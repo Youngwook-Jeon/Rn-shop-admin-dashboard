@@ -38,7 +38,12 @@ import {
 } from "@/app/admin/categories/create-category.schema";
 import { CategoriesWithProductsResponse } from "@/app/admin/categories/categories.types";
 import { CategoryForm } from "@/app/admin/categories/category-form";
-import { createCategory, imageUploadHandler } from "@/actions/categories";
+import {
+  createCategory,
+  deleteCategory,
+  imageUploadHandler,
+  updateCategory,
+} from "@/actions/categories";
 import { toast } from "sonner";
 
 type Props = {
@@ -64,20 +69,59 @@ const CategoriesPageComponent: FC<Props> = ({ categories }) => {
   const submitCategoryHandler: SubmitHandler<CreateCategorySchema> = async (
     data
   ) => {
-    const uniqueId = uuid();
-    const fileName = `category/category-${uniqueId}`;
-    const file = new File([data.image[0]], fileName);
-    const formData = new FormData();
-    formData.append("file", file);
+    const { image, name, intent = "create" } = data;
 
-    const image_url = await imageUploadHandler(formData);
+    const handleImageUpload = async () => {
+      const uniqueId = uuid();
+      const fileName = `category/category-${uniqueId}`;
+      const file = new File([data.image[0]], fileName);
+      const formData = new FormData();
+      formData.append("file", file);
 
-    if (image_url) {
-      await createCategory({ image_url, name: data.name });
-      form.reset();
-      router.refresh();
-      toast.success("Category created successfully");
+      return imageUploadHandler(formData);
+    };
+
+    switch (intent) {
+      case "create": {
+        const image_url = await handleImageUpload();
+
+        if (image_url) {
+          await createCategory({ image_url, name });
+          form.reset();
+          router.refresh();
+          setIsCreateCategoryModalOpen(false);
+          toast.success("Category created successfully");
+        }
+        break;
+      }
+      case "update": {
+        if (image && currentCategory?.slug) {
+          const image_url = await handleImageUpload();
+
+          if (image_url) {
+            await updateCategory({
+              image_url,
+              name,
+              slug: currentCategory.slug,
+              intent: "update",
+            });
+            form.reset();
+            router.refresh();
+            setIsCreateCategoryModalOpen(false);
+            toast.success("Category updated successfully");
+          }
+        }
+      }
+
+      default:
+        console.error("Invalid intent");
     }
+  };
+
+  const deleteCategoryHandler = async (id: number) => {
+    await deleteCategory(id);
+    router.refresh();
+    toast.success("Category deleted successfully");
   };
 
   return (
@@ -146,7 +190,7 @@ const CategoriesPageComponent: FC<Props> = ({ categories }) => {
                   category={category}
                   setCurrentCategory={setCurrentCategory}
                   setIsCreateCategoryModalOpen={setIsCreateCategoryModalOpen}
-                  //   deleteCategoryHandler={deleteCategoryHandler}
+                  deleteCategoryHandler={deleteCategoryHandler}
                 />
               ))}
             </TableBody>
