@@ -1,14 +1,4 @@
-export type Product = {
-  category: number;
-//   created_at: string;
-  hero_image: string;
-  id: number;
-  images_url: string[];
-  max_quantity: number;
-  price: number | null;
-  slug: string;
-  title: string;
-};
+import { ProductWithCategory } from "@/app/admin/products/products.types";
 
 export type Category = {
   created_at: string;
@@ -23,7 +13,7 @@ export type CategoryWithProducts = {
   id: number;
   image_url: string;
   name: string;
-  products: Product[];
+  products: ProductWithCategory[];
   slug: string;
 };
 
